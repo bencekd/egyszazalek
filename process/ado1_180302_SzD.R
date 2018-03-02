@@ -4,26 +4,92 @@ library(tidyr)
 library(rvest)
 library(SnowballC)
 library(ggmap)
+library(dplyr)
 
-### Szükséges adatok beolvasása ###
+### setting base directory
 
-a <- read.csv2("C:/Users/Szokolics_Daniel/Desktop/projects/ado1/171126_234458/egyszazalek.csv", sep = ";", fileEncoding = "utf-8",encoding = "utf-8", header = FALSE)
-b <- read.csv2("C:/Users/Szokolics_Daniel/Desktop/projects/ado1/171127_012911/egyszazalek.csv", sep = ";", fileEncoding = "utf-8", encoding = "utf-8", header = FALSE)
-c <- read.csv2("C:/Users/Szokolics_Daniel/Desktop/projects/ado1/180104_030331/egyszazalek.csv", sep = ";", fileEncoding = "utf-8", encoding = "utf-8", header = FALSE)
-egyszazalek <- do.call("rbind", list(a, b, c))
-egyszazalek$V8 <- NULL
-names(egyszazalek) <- c("ID", "Adószám", "Év", "Adószám2", "Cím", "Felajánlók száma", "Összeg")
+basedir <- "C:/Users/user/Google Drive/Projekt/201710_Egyszazalek/Data/raw/"
+setwd(basedir)
 
-mappak <- c("171126_234458", "171127_012911", "180104_030331")
-beolvasandok <- c("ngo_alap", "ngo_alap2", "ngos")
-mappak <- paste("C:/Users/Szokolics_Daniel/Desktop/projects/ado1/", mappak, sep = "")
+### szukseges adatok beolvasasa ###
 
-beolvlist <- list()
+mappak <- dir()
+beolvasandok <- c("ngo_alap", "ngo_alap2","egyszazalek")
+
+### 3 strukturaju adatforrast olvasunk, ngo_alap, ngo_alap2 formaja megegyezik
+### egyszazalek elter
+
+### clean ; characters from files
+
+for(b in beolvasandok){
+  dir_count = 0
+  for(m in mappak){
+    raw_file <- file(paste0(basedir,m,"/",b,".csv"), encoding = "utf-8", open = "r")
+    raw_data <- as.data.frame(readLines(raw_file), stringsAsFactors = FALSE)
+    close(raw_file)
+    names(raw_data) <- c("var")
+    raw_data <- raw_data %>%
+      mutate(var_corr = str_replace_all(var,"(?<=Cél leírása;).{1,};(?=.{1,};)","\\0___")) %>%
+      transform(var_corr = str_replace_all(var_corr,";___",",")) %>%
+      select(var_corr)
+    if(dir_count == 0){
+      raw_table <- raw_data
+      dir_count = dir_count + 1
+    }
+    else{
+      raw_table <- rbind(raw_table, raw_data)
+    }
+  }
+  assign(paste0("raw_",b), raw_table)
+  rm(raw_table)
+}
+
+## TO-DO> dobjuk ki az azonos adoszamhoz tartozo halmozott megfigyeleseket
+
+for(curr_dir in dir()){
+  print(curr_dir)
+  if(dir_count == 0){  
+    egyszazalek <- read.csv2(paste0(basedir,curr_dir,"/egyszazalek.csv"), sep = ";", fileEncoding = "utf-8",encoding = "utf-8", header = FALSE, stringsAsFactors = FALSE)
+    ngo_alap <- read.csv(paste0(basedir,curr_dir,"/ngo_alap.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
+    ngo_alap2 <- read.csv(paste0(basedir,curr_dir,"/ngo_alap2.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
+    dir_count = 1
+
+    egyszazalek$V1 <- paste0("0_",egyszazalek$V1)
+    ngo_alap$V1 <- paste0("0_",ngo_alap$V1)
+    ngo_alap2$V2 <- paste0("0_",ngo_alap2$V1)
+  } else {
+    egyszazalek_new <- read.csv2(paste0(basedir,curr_dir,"/egyszazalek.csv"), sep = ";", fileEncoding = "utf-8",encoding = "utf-8", header = FALSE, stringsAsFactors = FALSE)
+    ngo_alap_new <- read.csv(paste0(basedir,curr_dir,"/ngo_alap.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
+    ngo_alap2_new <- read.csv(paste0(basedir,curr_dir,"/ngo_alap2.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
+    dir_count = dir_count + 1
+
+    egyszazalek_new$V1 <- paste0(dir_count,"_",egyszazalek_new$V1)
+    ngo_alap_new$V1 <- paste0(dir_count,"_",ngo_alap_new$V1)
+    ngo_alap2_new$V2 <- paste0(dir_count,"_",ngo_alap2_new$V1)
+
+    egyszazalek <- rbind(egyszazalek, egyszazalek_new)
+    ngo_alap <- rbind(ngo_alap, ngo_alap_new)
+    ngo_alap2 <- rbind(ngo_alap2, ngo_alap2_new)
+  }
+}
+
+
+for(b in beolvasandok){
+  for(m in mappak){
+    beolvlist[[m]] <- file(paste0(basedir,m,"/",b,".csv"), encoding = "ISO-8859-2", open = "r")
+    beolvlist[[m]] <- as.data.frame(readLines(beolvlist[[m]]), stingsAsFactors = FALSE)
+  }
+  assign(beolvasandok[[b]], do.call("rbind", beolvlist))
+  assign(beolvasandok[[b]], separate(beolvlist[[m]], singlecol, 
+                                     into = c("ID", "Adószám", "Oszlopnév", "Érték"),
+                        sep = ";", remove = TRUE, extra = "merge"))
+}
+
 for (b in 1 : length(beolvasandok)) {
-  nev <- paste(mappak, "/", beolvasandok[b], ".csv", sep = "")
+  nev <- paste0(basedir,m,"/",b,".csv")
     for (m in 1 : length(mappak)) {
       beolvlist[[m]] <- file(nev[m], encoding = "utf-8", open = "r")
-      beolvlist[[m]] <- as.data.frame(readLines(beolvlist[[m]]))
+      beolvlist[[m]] <- as.data.frame(readLines(beolvlist[[m]]), stingsAsFactors = FALSE)
       names(beolvlist[[m]]) <- "singlecol"
     }
   assign(beolvasandok[[b]], do.call("rbind", beolvlist))
