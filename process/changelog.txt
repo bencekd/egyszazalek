@@ -1,0 +1,4 @@
+2018-02-01 v1.2 Blackwater
+
+### Changed
+- merging together ado1.R (kdb) and ado1_v1.1.R (szd)

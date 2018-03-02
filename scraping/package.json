@@ -1,0 +1,15 @@
+{
+  "name": "egyszazalek",
+  "version": "1.0.0",
+  "description": "Egyszazalek elemzes",
+  "main": "main.js",
+  "scripts": {},
+  "author": "Bence Kiss-Dobronyi",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "moment": "^2.19.2",
+    "nightmare": "^2.10.0",
+    "phantom": "5.5.1"
+  }
+}
