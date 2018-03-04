@@ -44,102 +44,58 @@ for(b in beolvasandok){
   rm(raw_table)
 }
 
-## TO-DO> dobjuk ki az azonos adoszamhoz tartozo halmozott megfigyeleseket
+### TO-DO> dobjuk ki az azonos adoszamhoz tartozo halmozott megfigyeleseket
+### en ekezet nelkuli billentyuvel dolgozom, pls hasznaljunk ilyen valtozoneveket
 
-for(curr_dir in dir()){
-  print(curr_dir)
-  if(dir_count == 0){  
-    egyszazalek <- read.csv2(paste0(basedir,curr_dir,"/egyszazalek.csv"), sep = ";", fileEncoding = "utf-8",encoding = "utf-8", header = FALSE, stringsAsFactors = FALSE)
-    ngo_alap <- read.csv(paste0(basedir,curr_dir,"/ngo_alap.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
-    ngo_alap2 <- read.csv(paste0(basedir,curr_dir,"/ngo_alap2.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
-    dir_count = 1
+### ngo alap struktura
+struct_ngo_alap <- c("ID", "adoszam", "oszlop", "ertek")
 
-    egyszazalek$V1 <- paste0("0_",egyszazalek$V1)
-    ngo_alap$V1 <- paste0("0_",ngo_alap$V1)
-    ngo_alap2$V2 <- paste0("0_",ngo_alap2$V1)
-  } else {
-    egyszazalek_new <- read.csv2(paste0(basedir,curr_dir,"/egyszazalek.csv"), sep = ";", fileEncoding = "utf-8",encoding = "utf-8", header = FALSE, stringsAsFactors = FALSE)
-    ngo_alap_new <- read.csv(paste0(basedir,curr_dir,"/ngo_alap.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
-    ngo_alap2_new <- read.csv(paste0(basedir,curr_dir,"/ngo_alap2.csv"), sep = ";", fileEncoding = "utf-8", encoding = "ISO-8859-2", quote = "", header = FALSE, stringsAsFactors = FALSE)
-    dir_count = dir_count + 1
+### egyszazalek struktura
+struct_egyszazalek <- c("ID", "adoszam", "year", "adoszam2", "cim", "db", "osszeg")
 
-    egyszazalek_new$V1 <- paste0(dir_count,"_",egyszazalek_new$V1)
-    ngo_alap_new$V1 <- paste0(dir_count,"_",ngo_alap_new$V1)
-    ngo_alap2_new$V2 <- paste0(dir_count,"_",ngo_alap2_new$V1)
+ngo_alap <- separate(raw_ngo_alap, var_corr, into = struct_ngo_alap,
+                        sep = ";", remove = TRUE, extra = "merge")
 
-    egyszazalek <- rbind(egyszazalek, egyszazalek_new)
-    ngo_alap <- rbind(ngo_alap, ngo_alap_new)
-    ngo_alap2 <- rbind(ngo_alap2, ngo_alap2_new)
-  }
-}
+ngo_alap2 <- separate(raw_ngo_alap2, var_corr, into = struct_ngo_alap,
+                        sep = ";", remove = TRUE, extra = "merge")
 
-
-for(b in beolvasandok){
-  for(m in mappak){
-    beolvlist[[m]] <- file(paste0(basedir,m,"/",b,".csv"), encoding = "ISO-8859-2", open = "r")
-    beolvlist[[m]] <- as.data.frame(readLines(beolvlist[[m]]), stingsAsFactors = FALSE)
-  }
-  assign(beolvasandok[[b]], do.call("rbind", beolvlist))
-  assign(beolvasandok[[b]], separate(beolvlist[[m]], singlecol, 
-                                     into = c("ID", "Adószám", "Oszlopnév", "Érték"),
-                        sep = ";", remove = TRUE, extra = "merge"))
-}
-
-for (b in 1 : length(beolvasandok)) {
-  nev <- paste0(basedir,m,"/",b,".csv")
-    for (m in 1 : length(mappak)) {
-      beolvlist[[m]] <- file(nev[m], encoding = "utf-8", open = "r")
-      beolvlist[[m]] <- as.data.frame(readLines(beolvlist[[m]]), stingsAsFactors = FALSE)
-      names(beolvlist[[m]]) <- "singlecol"
-    }
-  assign(beolvasandok[[b]], do.call("rbind", beolvlist))
-  assign(beolvasandok[[b]], separate(beolvlist[[m]], singlecol, 
-                                     into = c("ID", "Adószám", "Oszlopnév", "Érték"),
-                        sep = ";", remove = TRUE, extra = "merge"))
-}
-
-ngo_alap[] <- lapply(ngo_alap, gsub, pattern=';', replacement='')
-ngo_alap2[] <- lapply(ngo_alap2, gsub, pattern=';', replacement='')
-ngos[] <- lapply(ngos, gsub, pattern=';', replacement='')
+egyszazalek <- separate(raw_egyszazalek, var_corr, into = struct_egyszazalek,
+                        sep = ";", remove = TRUE, extra = "merge")
 
 ### Elemzendő adatok előállítása ###
 
-a <- ngo_alap[ngo_alap$Oszlopnév %in% 
+a <- ngo_alap[ngo_alap$oszlop %in% 
                        c("Cél szerinti besorolás", "Cél leírása"),]
-b <- ngo_alap2[ngo_alap2$Oszlopnév %in% 
+b <- ngo_alap2[ngo_alap2$oszlop %in% 
                          c("Tevékenység(ek) konkrét megnevezése"),]
-c <- ngos[ngos$Oszlopnév %in% 
-               c("Szervezet neve", "Cél szerinti besorolás", "Cél leírása"),]
 
-work <- do.call("rbind", list(a, b, c))
+work <- do.call("rbind", list(a, b))
 work$ID <- NULL
-work <- work[order(work$Adószám, work$Oszlopnév),]
+work <- work[order(work$adoszam, work$oszlop),]
 work <- work[!duplicated(work),]
 
 ### Ezt fogja kiváltani Bence kódja ###
-a <- work[work$Oszlopnév == "Cél szerinti besorolás",]
-a$Oszlopnév <- NULL
+a <- work[work$oszlop == "Cél szerinti besorolás",]
+a$oszlop <- NULL
 names(a) <- c("Adószám", "Cél szerinti besorolás")
-b <- work[work$Oszlopnév == "Szervezet neve",]
-b$Oszlopnév <- NULL
-names(b) <- c("Adószám", "Szervezet neve")
-c <- work[work$Oszlopnév == "Cél leírása",]
-c$Oszlopnév <- NULL
-names(c) <- c("Adószám", "Cél leírása")
-d <- work[work$Oszlopnév == "Tevékenység(ek) konkrét megnevezése",]
-d$Oszlopnév <- NULL
-names(d) <- c("Adószám", "Tevékenységek megnevezése")
 
-work <- merge(b, a, by = 'Adószám', all.x = TRUE)
+b <- work[work$oszlop == "Cél leírása",]
+b$oszlop <- NULL
+names(b) <- c("Adószám", "Cél leírása")
+
+c <- work[work$oszlop == "Tevékenység(ek) konkrét megnevezése",]
+c$oszlop <- NULL
+names(c) <- c("Adószám", "Tevékenységek megnevezése")
+
+work <- merge(a, b, by = 'Adószám', all.x = TRUE)
 work <- merge(work, c, by = 'Adószám', all.x = TRUE)
-work <- merge(work, d, by = 'Adószám', all.x = TRUE)
 work$'Cél leírása'[is.na(work$'Cél leírása')] <- ""
 work$`Tevékenységek megnevezése`[is.na(work$`Tevékenységek megnevezése`) == TRUE] <- ""
 work$'Leírás' <- paste(work$`Cél leírása`, " ", work$`Tevékenységek megnevezése`)
 work$`Cél leírása` <- NULL
 work$`Tevékenységek megnevezése` <- NULL
 
-rm(a, b, c, d)
+rm(a, b, c)
 
 ### Kész a besorolásokhoz szükséges dataset ###
 
