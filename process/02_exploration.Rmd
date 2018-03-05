@@ -1,0 +1,54 @@
+---
+title: "Data exploration 1%"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+First we find the unique types of values represented in the *ngo_alap* dataset.
+
+```{r}
+unique(ngo_alap$oszlop)
+```
+
+Fields 7-9 from the results are identifiers that are irrelevant for us. Therefore can be dropped from the dataset. Field 12 indicates that there are no records for the organization, while field 13 is an apparent error with only two observations.
+
+```{r}
+ngo_alap %>%
+  filter(oszlop %in% unique(ngo_alap$oszlop)[13])
+
+ex_ngo_alap <- ngo_alap %>%
+  filter(!(oszlop %in% unique(ngo_alap$oszlop)[c(7:9,12,13)]))
+```
+
+We will use the same process for the *ngo_alap2* dataset.
+
+```{r}
+unique(ngo_alap2$oszlop)
+```
+
+We will drop, again, the identifier and no records fields.
+
+```{r}
+ex_ngo_alap2 <- ngo_alap2 %>%
+  filter(!(oszlop %in% unique(ngo_alap2$oszlop)[c(1,13,15,16,20)]))
+```
+
+After filtering the datasets we conclude further filtering based on the id *adoszam*. It is a unique identifier and this should be reflected in the dataset.
+
+```{r}
+ex_ngo_alap_02 <- ex_ngo_alap %>%
+  distinct(adoszam, oszlop, .keep_all = TRUE)
+
+ex_ngo_alap2_02 <- ex_ngo_alap2 %>%
+  distinct(adoszam, oszlop, .keep_all = TRUE)
+
+ex_egyszazalek <- egyszazalek %>%
+  distinct(adoszam, year, .keep_all = TRUE)
+```

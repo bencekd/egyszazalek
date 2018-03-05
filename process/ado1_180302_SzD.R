@@ -62,6 +62,7 @@ ngo_alap2 <- separate(raw_ngo_alap2, var_corr, into = struct_ngo_alap,
 egyszazalek <- separate(raw_egyszazalek, var_corr, into = struct_egyszazalek,
                         sep = ";", remove = TRUE, extra = "merge")
 
+
 ### Elemzendő adatok előállítása ###
 
 a <- ngo_alap[ngo_alap$oszlop %in% 
